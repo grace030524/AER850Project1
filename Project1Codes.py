@@ -28,10 +28,13 @@ plt.show()
 
 #Histogram of the train dataset
 sns.displot(X_train)
+plt.title('X coordinate')
 plt.show()
 sns.displot(Y_train)
+plt.title('Y coordinate')
 plt.show()
 sns.displot(Z_train)
+plt.title('Z coordinate')
 plt.show()
 
 # Step 3
@@ -40,7 +43,6 @@ corr = df.corr(method='spearman')
 sns.heatmap(corr, vmin=-1, vmax=1, annot=True)
 
 #Step 4
-from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
 #Processing dataset to use for training
 Xtrain = X_train.reshape(-1, 1)
@@ -51,12 +53,14 @@ features1 = np.column_stack((Xtrain,Ytrain,Ztrain))
 #Decision tree model development
 #Define decision tree model
 dtree = DecisionTreeClassifier()
+#Setup grid parameters
+gridDT = [{'max_depth':[1, 5, 10, 15], 'min_samples_split':[2, 4, 6, 8], 'min_samples_leaf':[1, 3, 5, 7]}]
+#Perform grid search
+clfDT = GridSearchCV(estimator = dtree, param_grid = gridDT, scoring = 'f1_macro', cv = 5,)
 #Training model
-dtree.fit(features1, Step_train)
+clfDT.fit(features1, Step_train)
 #Decision tree result visualization
-plt.figure(figsize=(42, 30))
-tree.plot_tree(dtree, feature_names=features1)
-plt.show()
+print(f'Decision Tree model\n{clfDT.best_estimator_}')
 
 #Logistic regression model development
 from sklearn import linear_model
@@ -65,7 +69,7 @@ logr = linear_model.LogisticRegression(max_iter=10000, solver='lbfgs')
 #Setup grid parameters
 gridLR = [{'multi_class':['multinomial', 'ovr'], 'C':[1, 10, 20 ,50]}]
 #Perform grid search cross-validation for hyperparameters
-clfLR = GridSearchCV(estimator = logr, param_grid = gridLR, scoring = 'accuracy', cv = 5,)
+clfLR = GridSearchCV(estimator = logr, param_grid = gridLR, scoring = 'f1_macro', cv = 5)
 #Training model
 clfLR.fit(features1, Step_train)
 #Display logistic regression model result
@@ -78,7 +82,7 @@ rf = RandomForestClassifier()
 #Setup grid parameters
 param_grid = {'n_estimators': [5, 10, 15], 'max_depth': [None, 10, 20], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4]}
 #Perform grid search cross-validation for hyperparameters
-clfRF = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5)
+clfRF = GridSearchCV(estimator=rf, param_grid=param_grid, scoring = 'f1_macro', cv=5)
 #Training model
 clfRF.fit(features1, Step_train)
 #Display random forest model result
@@ -87,7 +91,7 @@ print(f'Random Forest model\n{clfRF.best_estimator_}')
 #Random forest with RandomizedSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 #Setup parameters and perform randomized search cross-validation
-clfRRF = RandomizedSearchCV(estimator = rf, param_distributions = param_grid, cv = 5)
+clfRRF = RandomizedSearchCV(estimator = rf, param_distributions = param_grid, scoring = 'f1_macro', cv = 5)
 #Training model
 clfRRF.fit(features1, Step_train)
 #Display random forest result (RandomnizedsearchCV)
@@ -102,7 +106,7 @@ Ztest = Z_test.reshape(-1, 1)
 testfeatures = np.column_stack((Xtest,Ytest,Ztest))
 
 #Decision tree model testing
-SteppredictDT = dtree.predict(testfeatures)
+SteppredictDT = clfDT.predict(testfeatures)
 #Calculate and display performances of the test results
 print('Performance of Descision tree')
 print('Precision: %f' % precision_score(Step_test, SteppredictDT, average='macro'))
@@ -162,7 +166,7 @@ plt.show()
 from sklearn.ensemble import StackingClassifier
 #Setup base models: Decision tree and Logistic Regression
 #Parameters obtained from step 4
-base_models = [('dt', dtree), ('lr', clfLR.best_estimator_)]
+base_models = [('dt', clfDT.best_estimator_), ('lr', clfLR.best_estimator_)]
 #Setup meta model
 meta_model = RandomForestClassifier()
 #Stack the models
