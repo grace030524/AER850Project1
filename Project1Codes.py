@@ -54,6 +54,7 @@ dtree = DecisionTreeClassifier()
 #Training model
 dtree.fit(features1, Step_train)
 #Decision tree result visualization
+plt.figure(figsize=(42, 30))
 tree.plot_tree(dtree, feature_names=features1)
 plt.show()
 
